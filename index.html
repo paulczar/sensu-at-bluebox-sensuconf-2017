@@ -45,13 +45,29 @@
 					<h2>Sensu @ Bluebox Cloud</h2>
 					<p><small>https://github.com/paulczar/sensu-at-bluebox-sensuconf-2017</small>
           <aside class="notes">
-          <p>
           </aside>
 				</section>
 
+				<section data-background="">
+							<a href="http://twitter.com/pczarkowski/"><img src="images/whoami.png" /></a>
+				</section>
+
 				<section data-background="images/slide_bg.png">
-				<h2>A quick history of Bluebox</h2>
+				<h2>12 years of bluebox</h2>
+					<b>in 5 dot points</b>
+				<ol>
+					<li> Jesse Proudman builds website for a dentist
+					<li> white glove managed hosting
+					<li> openvz based public cloud
+					<li> managed private cloud (openstack)
+					<li> SRE Operations Platform (SiteController)
+				</ol>
 				<aside class="notes">
+					<p>12 years old, originally whiteglove managed hosting
+					<p>built a openvz public cloud before containers were cool - travisci
+					<p>pivoted to managed private cloud (openstack) as market shrunk
+					<p>2-6 engineers built automation tooling for install/management openstack
+					<p>2-4 engineers built automation tooling for SRE Platform (inc monitoring)
 				</aside>
 				</section>
 
@@ -84,7 +100,8 @@ $ ansible-playbook -i ../envs/dc1 site.yml
 
 				<section data-background="images/eye_bee_m.jpg">
 				<aside class="notes">
-					<p>between 2015 and 2016 IBM acquired us, sudden spurts of growth, both team (5!) and customers
+					<p>between 2015 and 2016 IBM acquired us, sudden spurts of growth, both team and customers
+					<p>eng team went from 6 to 60 overnight... that was fun.
 					<p>Support/Operations took full first level pagerduty triage for openstack, SC eng remained as is
 					<p>Expanded from our 4 DCs into potentially 30+ SL DCs
 					<p>influx of deployments in customer DCs
@@ -94,75 +111,82 @@ $ ansible-playbook -i ../envs/dc1 site.yml
 				<section data-background="images/bg_bbc-2016.png">
 				<img src="images/bbc-2016.png" width="70%">
 				<aside class="notes">
-				<p>
+				<p>in 2016 we went from decentralized to somewhat centralized
+				<p>central SC and remote SC - central monitors remote and proxies dashboards
+				<p>approx 20 datacenters in total ... which means 20 sensu instances
+				<p>ipsec tunnels between all ...  all traffic flows through ipsec (no egress @ remote)
 				</aside>
 				</section>
 
 				<section data-background="images/bg_bbc-2016.png">
 				<img src="images/central_dashboard.png">
 				<aside class="notes">
-				<p>
+				<p>apache reverse proxies thru ipsec to present all dashboards from one location
+				<p>oauth back to bluebox auth system
 				</aside>
 				</section>
 
 				<section data-background="images/bg_bbc-2017.png">
 				<img src="images/bbc-2017.png" width="70%">
 				<aside class="notes">
-				<p>
+				<p>roughly same as 2016, just bigger
+				<p>added warm spare central SC with ansible playbook cutover
+				<p>approx 40 datacenters and 100 clouds
 				</aside>
 				</section>
 
 				<section data-background="images/slide_bg.png">
 				<h2>Lessons Learned!</h2>
 				<ul>
-					<li>We didn't realize we needed flapjack until we did.
-					<li>Flapjack handler didn't handle our throughput, rewrote it.
-					<li>sensu-server not keeping up with rabbit queue.  15+ sensu-server processes.
-					<li>sensu was OK for collecting metrics.
-					<li>NOBODY EVER LOOKS AT DASHBOARDS.
+					<li>Automate! Automate! Automate!
+					<li>we both love and hate flapjack
+					<li>poorly written checks are bad
+					<li>Metrics with Sensu...
+					<li>NOBODY EVER LOOKS AT DASHBOARDS :sadface:
 				</ul>
 				<aside class="notes">
-					<p>Initially we wanted to punt remote sensus through squid proxy, PITA to implement, solved with flapjack.
-					<p>As we grew, we had major issues with throughput in flapjack handler, we had to rewrite it.
+					<p>Install was fully automated, ansible to create ansible, could deploy all in < 1 hour
+					<p>did full SC/OS deploy to china dc on a plane from SEA -> AUS
+					<p>remote sensus to PD PITA to implement, solved with flapjack instead.
+					<p>we had major issues with throughput in flapjack handler, we had to rewrite it.
 					<p>We had a bug with one of our checks that cause us to need 15+ sensu server processes in some DCs.
 					<p>Surprisingly using sensu client to collect our metrics was totally sufficient for our low metrics use case.
-
-				<p>
+					<p>Still nobody really ever looks at dashboards :(
 				</aside>
 				</section>
 
-
-				<section data-background="">
-							<a href="http://twitter.com/pczarkowski/"><img src="images/whoami.png" /></a>
+				<section data-background="images/slide_bg.png">
+				<h2>Cuttle (sitecontroller)</h2>
+				<p><a href="https://github.com/IBM/cuttle">https://github.com/IBM/cuttle</a>
+				<p><b>Blue Box / IBM SRE Operations Platform</b>
+				<p>Large monolithic ansible repo responsible for deploying:
+				<ul>
+					<li>Sensu / Graphite / Uchiwa / Grafana
+					<li>Elasticsearch / Logstash / Kibana
+					<li>Mirrors - apt, yum, pypi, rubygems
+					<li>2FA (yubikey or TOTP) Bastion
+					<li>much much more...
+				</ul>
+				<aside class="notes">
+					<p>
+				</aside>
 				</section>
-
-        <section>
-          <h2>CODE BLOCK</h2>
-          <pre class="stretch"><code data-trim>
-sssss
-          </code></pre>
-          <aside class="notes">
-          <p> *
-          </aside>
-        </section>
 
 				<section data-background="images/slide_bg.png">
 				<h2>Links</h2>
 				<ul>
-				<li><a href="http://sysadvent.blogspot.com/2015/12/day-16-merry-paasmas-and-very.html">Original Blog Post</a>
-				<li><a href="https://github.com/openstack/osops-tools-contrib/tree/master/terraform/">Openstack Ops terraform templates</a>
-				<li><a href="https://github.com/atx2016/openstack-summit-austin-2016">This Presentation (and code for demo)</a>
+				<li><a href="https://tech.paulcz.net/shrunken-steinhauser/#/">This Presentation!</a>
+				<li><a href="http://https://github.com/IBM/cuttle/blob/master/docs/deploy-oauth-secured-monitoring-server.md">Cuttle - Monitoring</a>
+				<li><a href="https://twitter.com/pczarkowski/">@pczarkowski on twitter</a>
 				</ul>
         <aside class="notes">
-        <p>* orig article on sysadvent, ghost blog with database.
-        <p>* Terraform for openstack, swarm,registry,deis,others
+        <p>
         </aside>
 				</section>
 
 				<section data-background="images/slide_bg.png">
 				<h2>Thank You!</h2>
 				<img src="images/finish.jpg">
-				<h3>Questions?</h3>
           <aside class="notes">
           </aside>
 				</section>
