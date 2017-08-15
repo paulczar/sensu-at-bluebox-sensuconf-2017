@@ -43,13 +43,21 @@
 				<section data-background="images/title_page.png">
 				  <br><br><bR>
 					<h2>Sensu @ Bluebox</h2>
+					<p>Scaling Sensu from dozens to thousands of servers
 					<p><small>https://github.com/paulczar/sensu-at-bluebox-sensuconf-2017</small>
           <aside class="notes">
+						<p>originally was going to be "data driven monitoring deployments" but
+							couldn't fit it into 10 mins.
+						<p>instead going to show yearly snapshots of our monitoring infra to show
+							 our growth, scaling, improvements.
+					  <p>many other speakers today like Kyle and Jeff covered a lot of what I would have talked about anyways.
           </aside>
 				</section>
 
 				<section data-background="">
 							<a href="http://twitter.com/pczarkowski/"><img src="images/whoami.png" /></a>
+				<aside class="notes">
+					<p>My name is Paul Czarkowski, I'm a technical lead (whatever that means) at IBM.
 				</section>
 
 				<section data-background="images/slide_bg.png">
@@ -63,11 +71,11 @@
 					<li> SRE Operations Platform (SiteController)
 				</ol>
 				<aside class="notes">
-					<p>12 years old, originally whiteglove managed hosting
-					<p>built a openvz public cloud before containers were cool - travisci
-					<p>pivoted to managed private cloud (openstack) as market shrunk
-					<p>2-6 engineers built automation tooling for install/management openstack
-					<p>2-4 engineers built automation tooling for SRE Platform (inc monitoring)
+					<p>12 years old, went from building websites, managed hosting
+					<p>openvz public cloud, finally managed private cloud,
+					<p>and acquired by IBM.
+					<p>going to talk about the evolution of our monitoring stack as we went
+						from monitoring dozens to thousands of servers.
 				</aside>
 				</section>
 
@@ -136,10 +144,10 @@ $ ansible-playbook -i ../envs/dc1 site.yml
 				</section>
 
 				<section data-background="images/slide_bg.png">
-				<h2>Lessons Learned!</h2>
+				<h2>random thoughts...</h2>
 				<ul>
 					<li>Automate! Automate! Automate!
-					<li>we both love and hate flapjack
+					<li>flapjack handler == poor concurrancy
 					<li>poorly written checks are bad
 					<li>Metrics with Sensu...
 					<li>NOBODY EVER LOOKS AT DASHBOARDS :sadface:
@@ -172,12 +180,100 @@ $ ansible-playbook -i ../envs/dc1 site.yml
 				</aside>
 				</section>
 
+				<section>
+					<h2>Data Driven Infrastructure</h2>
+					<ol>
+					  <li>$ vim site/template.yml
+						<li>$ ansible-playbook -i site/ generate.yml
+						<li>generates - site/{hosts,ssh_config,group_vars,host_vars,etc}
+						<li>$ ansible-playbook -i site/hosts site.yml
+					</ol>
+				</section>
+
+				<section>
+					<h2>Data Driven Checks</h2><h3>check scripts</h3>
+					<ul>
+						<li>all sensu check scripts in a git repo
+						<li>jenkins builds .deb files on commit to git
+						<li>ansible does `apt-get install sensu-checks`
+				</section>
+
+				<section>
+					<h2>Data Driven Checks</h2><h3>Ansible variable</h3>
+					<pre><code>
+sensu_checks:
+  rabbitmq:
+    check_rabbitmq_messages:
+      handler: default
+      notification: "too many queued rabbitmq messages"
+      interval: 120
+      occurrences: 5
+      standalone: true
+      command: "check-rabbitmq-messages.rb -w 10000 -c 50000 \
+      --user {{ sensu.server.rabbitmq.username }} \
+      --password {{ sensu.server.rabbitmq.password }}"
+      service_owner: "{{ monitoring_common.service_owner }}"
+					</code></pre>
+				</section>
+
+				<section>
+					<h2>Data Driven Checks</h2><h3>Ansible task</h3>
+
+					<pre><code>
+- name: install sensu checks
+  sensu_check_dict: name="{{ item.name }}" check="{{ item.check }}"
+  with_items:
+    - name: check-rabbitmq-messages
+      check: "{{ sensu_checks.rabbitmq.check_rabbitmq_messages }}"
+notify: restart sensu-client
+					</code></pre>
+				</section>
+
+				<section>
+					<h2>Data Driven Checks</h2><h3>resultant check file</h3>
+					<pre><code>
+$ cat /etc/sensu/conf.d/checks/check-rabbitmq-messages.json
+{
+    "checks": {
+        "check-rabbitmq-messages": {
+            "standalone": true,
+            "notification": "too many queued rabbitmq messages",
+            "interval": 120,
+            "service_owner": "default",
+            "handler": "default",
+            "command": "check-rabbitmq-messages.rb --user sensu --password sensu -w 10000 -c 50000",
+            "occurrences": 5
+        }
+    }
+}
+			</code></pre>
+		</section>
+
+		<section>
+			<h2>Data Driven Checks</h2><h3>quick fix a thing!</h3>
+			<pre><code>
+$ ansible-playbook -e \
+  "sensu_checks.rabbitmq.check_rabbitmq_messages.interval=60" \
+	-i site/hosts site.yml --tags=sensu-checks
+...
+...
+			</code></pre>
+		</section>
+
+<section>
+<h2>sensu driven compliance</h2>
+<ul>
+	<li>compliance rules written in [server|in]spec
+	<li>sensu runs [server|in]spec and alerts when failures
+	<li>Runs hourly, so we know within an hour when a machine falls out of compliance
+	<li>sensu-client.log goes to ELK .. so we get a FREE compliance audit report.
+</section>
 				<section data-background="images/slide_bg.png">
 				<h2>Links</h2>
 				<ul>
-				<li><a href="https://tech.paulcz.net/shrunken-steinhauser/#/">This Presentation!</a>
-				<li><a href="http://https://github.com/IBM/cuttle/blob/master/docs/deploy-oauth-secured-monitoring-server.md">Cuttle - Monitoring</a>
-				<li><a href="https://twitter.com/pczarkowski/">@pczarkowski on twitter</a>
+				<li><a href="https://github.com/paulczar/sensu-at-bluebox-sensuconf-2017">https://github.com/paulczar/sensu-at-bluebox-sensuconf-2017</a>
+				<li><a href="http://https://github.com/IBM/cuttle/blob/master/docs/deploy-oauth-secured-monitoring-server.md">http://https://github.com/IBM/cuttle</a>
+				<li><a href="https://twitter.com/pczarkowski/">@pczarkowski</a>
 				</ul>
         <aside class="notes">
         <p>
